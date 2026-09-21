@@ -79,6 +79,5 @@ public class Controlador {
         juego.iniciar();
     }
     public void restablecerPuntos() {
-        juego.getAvion().agregarPuntos(-juego.getAvion().getPuntos());
-    }
-}
+        juego.restablecerPuntos();
+    }}

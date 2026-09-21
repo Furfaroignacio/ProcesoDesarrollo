@@ -20,7 +20,6 @@ public class Juego {
     private static final int VIDAS_INICIALES = 3;
     private static final int FPS = 60;
     private static final int PUNTOS_NIVEL = 300;
-    private static final double RADIO_IMPACTO_MISIL = 25.0;
 
     private final Nivel nivel;
     private final Avion avion;
@@ -67,8 +66,11 @@ public class Juego {
         explosionesRecientes.clear();
         tickDisparo++;
 
-        int intervalo = Math.max(4, (int) (FPS / nivel.getFrecDisparo()));
-        boolean esTurnoDisparo = tickDisparo >= intervalo;
+        int intervalo =
+                Math.max(4, (int) (FPS / nivel.getFrecDisparo()));
+
+        boolean esTurnoDisparo =
+                tickDisparo >= intervalo;
 
         if (esTurnoDisparo) {
             tickDisparo = 0;
@@ -83,12 +85,22 @@ public class Juego {
     }
 
     private void actualizarDrones(boolean esTurnoDisparo) {
+
         for (Escuadron escuadron : escuadrones) {
-            for (Dron dron : new ArrayList<>(escuadron.getDronesActivos())) {
+
+            for (Dron dron :
+                    new ArrayList<>(escuadron.getDronesActivos())) {
+
                 dron.mover();
-                if (esTurnoDisparo && Math.random() < nivel.getProbDisparo()) {
-                    misilsActivos.add(dron.disparar(nivel.getVelMisiles()));
+
+                if (esTurnoDisparo
+                        && Math.random() < nivel.getProbDisparo()) {
+
+                    misilsActivos.add(
+                            dron.disparar(nivel.getVelMisiles())
+                    );
                 }
+
                 if (dron.completoRecorrido()) {
                     escuadron.notificarCompletado(dron);
                 }
@@ -97,58 +109,88 @@ public class Juego {
     }
 
     private void actualizarMisiles() {
-        List<Misil> misilesAEliminar = new ArrayList<>();
+
+        List<Misil> misilesAEliminar =
+                new ArrayList<>();
+
         for (Misil misil : misilsActivos) {
-            double altitudAnterior = misil.getAltitud();
+
+            double altitudAnterior =
+                    misil.getAltitud();
+
             misil.mover();
 
-            if (misilImpactaAvion(misil, altitudAnterior)) {
-                Explosion explosion = misil.explotar();
+            /*
+             * GRASP - Information Expert:
+             * Juego ya no calcula cómo se produce el impacto.
+             * Le pregunta al propio misil.
+             */
+            if (misil.impacta(avion, altitudAnterior)) {
+
+                Explosion explosion =
+                        misil.explotar();
+
                 avion.perderVida();
+
                 explosionesRecientes.add(explosion);
                 misilesAEliminar.add(misil);
+
             } else if (misil.debeExplotar()) {
-                Explosion explosion = misil.explotar();
+
+                Explosion explosion =
+                        misil.explotar();
+
                 avion.recibirExplosion(explosion);
+
                 explosionesRecientes.add(explosion);
                 misilesAEliminar.add(misil);
+
             } else if (misil.getAltitud() < 900) {
+
                 misilesAEliminar.add(misil);
             }
         }
+
         misilsActivos.removeAll(misilesAEliminar);
     }
 
-    private boolean misilImpactaAvion(Misil misil, double altitudAnterior) {
-        if (Math.abs(misil.getPosX() - avion.getPosX()) > RADIO_IMPACTO_MISIL) {
-            return false;
-        }
-        double min = Math.min(altitudAnterior, misil.getAltitud()) - RADIO_IMPACTO_MISIL;
-        double max = Math.max(altitudAnterior, misil.getAltitud()) + RADIO_IMPACTO_MISIL;
-        return avion.getAltitud() >= min && avion.getAltitud() <= max;
-    }
-
     private void verificarNivelSuperado() {
+
         if (!enCurso) {
             return;
         }
 
-        boolean escuadronesCompletos = escuadrones.stream().allMatch(Escuadron::estaCompleto);
-        if (!escuadronesCompletos || !misilsActivos.isEmpty()) {
+        boolean escuadronesCompletos =
+                escuadrones.stream()
+                        .allMatch(Escuadron::estaCompleto);
+
+        if (!escuadronesCompletos
+                || !misilsActivos.isEmpty()) {
+
             return;
         }
+
         avion.agregarPuntos(PUNTOS_NIVEL);
         avion.agregarVida();
+
         nivel.avanzar();
+
         iniciar();
     }
 
-    public void moverAvion(Direccion direccion, double delta) {
+    public void moverAvion(
+            Direccion direccion,
+            double delta) {
+
         avion.mover(direccion, delta);
     }
 
     public void cambiarAltitudAvion(double delta) {
         avion.cambiarAltitud(delta);
+    }
+
+    public void restablecerPuntos() {
+        avion.restablecerPuntos();
     }
 
     public Nivel getNivel() {
@@ -174,5 +216,4 @@ public class Juego {
     public boolean isEnCurso() {
         return enCurso;
     }
-
 }

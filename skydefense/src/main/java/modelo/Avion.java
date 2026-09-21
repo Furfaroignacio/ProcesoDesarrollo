@@ -49,7 +49,10 @@ public class Avion extends EntidadVoladora {
             energia = estaVivo() ? ENERGIA_MAX : 0;
         }
     }
-
+    // GRASP - Information Expert
+    public void restablecerPuntos() {
+        puntos = 0;
+    }
     public void perderVida() {
         if (vidas > 0) vidas--;
     }
