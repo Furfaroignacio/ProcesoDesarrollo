@@ -325,7 +325,7 @@ class SkyDefenseTest {
         Juego juego = new Juego();
         juego.iniciar();
         int vidasAntes = juego.getAvion().getVidas();
-        Escuadron escuadron = juego.getEscuadrones().get(0);
+        Escuadron escuadron = juego.getEscuadron();
 
         while (!escuadron.estaCompleto()) {
             for (Dron dron : new ArrayList<>(escuadron.getDronesActivos())) {
@@ -342,20 +342,138 @@ class SkyDefenseTest {
     @Test
     @DisplayName("Misil que cruza el avion durante el tick resta una vida")
     void juego_misilImpactaAvion_restaVida() {
+        // Random fijo: drones de izquierda a derecha, disparan siempre y
+        // sus misiles detonan a 1200m (mas abajo que el avion).
+        Juego juego = new Juego(new FixedRandom());
+        juego.iniciar();
+        // Los drones salen de x=0 y disparan en x=60 (tick 12): el avion espera ahi.
+        juego.moverAvion(Direccion.DERECHA_IZQUIERDA, 440);
+        assertEquals(60, juego.getAvion().getPosX(), 0.001);
+
+        boolean impacto = false;
+        for (int tick = 0; tick < 200 && !impacto; tick++) {
+            juego.actualizar();
+            impacto = juego.getAvion().getVidas() < 3;
+        }
+
+        assertTrue(impacto, "El misil deberia haber impactado al avion");
+        assertEquals(2, juego.getAvion().getVidas());
+        assertFalse(juego.getExplosionesRecientes().isEmpty());
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // JUEGO — reinicio de partida
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Reiniciar partida restablece nivel, vidas, energia y puntos")
+    void juego_reiniciarPartida_restableceTodo() {
         Juego juego = new Juego();
         juego.iniciar();
-        juego.getMisilsActivos().add(new Misil(
-            juego.getAvion().getPosX(),
-            juego.getAvion().getAltitud() + 10,
-            30,
-            1000
-        ));
+        juego.getNivel().avanzar();
+        juego.getAvion().agregarPuntos(500);
+        juego.getAvion().agregarVida();
+        juego.getAvion().perderEnergia(40);
 
-        juego.actualizar();
+        juego.reiniciarPartida();
 
-        assertEquals(2, juego.getAvion().getVidas());
+        assertTrue(juego.isEnCurso());
+        assertEquals(1, juego.getNivel().getNumero());
+        assertEquals(3, juego.getAvion().getVidas());
+        assertEquals(0, juego.getAvion().getPuntos());
+        assertEquals(100, juego.getAvion().getEnergia(), 0.001);
         assertTrue(juego.getMisilsActivos().isEmpty());
-        assertFalse(juego.getExplosionesRecientes().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Iniciar (pasar de nivel) conserva vidas y puntos")
+    void juego_iniciar_conservaEstadoDelAvion() {
+        Juego juego = new Juego();
+        juego.iniciar();
+        juego.getAvion().agregarPuntos(500);
+        juego.getAvion().perderVida();
+
+        juego.iniciar();
+
+        assertEquals(500, juego.getAvion().getPuntos());
+        assertEquals(2, juego.getAvion().getVidas());
+    }
+
+    @Test
+    @DisplayName("Juego tiene un unico escuadron y se renueva al iniciar")
+    void juego_escuadronUnico_seRenuevaAlIniciar() {
+        Juego juego = new Juego();
+        juego.iniciar();
+        Escuadron primero = juego.getEscuadron();
+        assertNotNull(primero);
+
+        juego.iniciar();
+
+        assertNotSame(primero, juego.getEscuadron());
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // MISIL — impacto directo y AVION — recibirImpacto
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Misil impacta si cruza al avion durante el desplazamiento")
+    void misil_impacta_cuandoCruzaAlAvion() {
+        Avion avion = new Avion(500, 3000, 3);
+        Misil misil = new Misil(500, 3020, 60, 1000);
+        double altitudAnterior = misil.getAltitud();
+        misil.mover(); // 3020 -> 2960: atraviesa los 3000m del avion
+
+        assertTrue(misil.impacta(avion, altitudAnterior));
+    }
+
+    @Test
+    @DisplayName("Misil no impacta si esta lejos horizontalmente")
+    void misil_noImpacta_siEstaLejosHorizontalmente() {
+        Avion avion = new Avion(500, 3000, 3);
+        Misil misil = new Misil(560, 3020, 60, 1000);
+        double altitudAnterior = misil.getAltitud();
+        misil.mover();
+
+        assertFalse(misil.impacta(avion, altitudAnterior));
+    }
+
+    @Test
+    @DisplayName("Misil no impacta si todavia no llego a la altitud del avion")
+    void misil_noImpacta_siNoLlegoALaAltitud() {
+        Avion avion = new Avion(500, 3000, 3);
+        Misil misil = new Misil(500, 4500, 42, 1000);
+        double altitudAnterior = misil.getAltitud();
+        misil.mover();
+
+        assertFalse(misil.impacta(avion, altitudAnterior));
+    }
+
+    @Test
+    @DisplayName("Avion pierde exactamente una vida al recibir un impacto")
+    void avion_recibirImpacto_restaUnaVida() {
+        Avion avion = new Avion(500, 3000, 3);
+
+        avion.recibirImpacto();
+
+        assertEquals(2, avion.getVidas());
+        assertTrue(avion.estaVivo());
+    }
+
+    @Test
+    @DisplayName("Misil con Random inyectado detona dentro del rango 1200-4500")
+    void misil_conRandomInyectado_detonaEnRango() {
+        assertEquals(1200, new Misil(0, 5000, 30, new FixedRandom()).getAltitudDetonacion(), 0.001);
+    }
+
+    /**
+     * Random determinista: nextBoolean() siempre true, nextDouble() siempre 0.0
+     * (los drones siempre disparan y los misiles detonan a 1200m) y nextInt(n) = 0.
+     */
+    private static class FixedRandom extends Random {
+        @Override public boolean nextBoolean()     { return true; }
+        @Override public double  nextDouble()      { return 0.0; }
+        @Override public int     nextInt(int bound){ return 0; }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -375,6 +493,43 @@ class SkyDefenseTest {
     @DisplayName("Controlador reporta nivel correcto")
     void controlador_getNumeroNivel_esUno() {
         assertEquals(1, controlador.getNumeroNivel());
+    }
+
+    @Test
+    @DisplayName("Controlador reinicia la partida completa")
+    void controlador_reiniciarJuego_restableceTodo() {
+        controlador.actualizarJuego();
+        for (int i = 0; i < 5; i++) controlador.moverAvionIzquierda(9);
+
+        controlador.reiniciarJuego();
+
+        assertTrue(controlador.juegoEnCurso());
+        assertEquals(1, controlador.getNumeroNivel());
+        assertEquals(3, controlador.getVidas());
+        assertEquals(0, controlador.getPuntos());
+        assertEquals(500, controlador.getPosXAvion(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Controlador mueve el avion a izquierda y derecha")
+    void controlador_moverAvion_izquierdaYDerecha() {
+        double inicio = controlador.getPosXAvion();
+
+        controlador.moverAvionDerecha(10);
+        assertEquals(inicio + 10, controlador.getPosXAvion(), 0.001);
+
+        controlador.moverAvionIzquierda(30);
+        assertEquals(inicio - 20, controlador.getPosXAvion(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Controlador expone posiciones de drones activos (entre 2 y 4 al iniciar)")
+    void controlador_getPosicionesDrones_alIniciar() {
+        int cantidad = controlador.getPosicionesDrones().size();
+
+        assertTrue(cantidad >= 2 && cantidad <= 4, "Drones activos: " + cantidad);
+        assertTrue(controlador.getPosicionesMisiles().isEmpty());
+        assertTrue(controlador.getPosicionesExplosiones().isEmpty());
     }
 
 }

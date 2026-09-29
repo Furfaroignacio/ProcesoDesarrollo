@@ -32,34 +32,47 @@ classDiagram
         +mover(dir: Direccion, delta: double)
         +cambiarAltitud(delta: double)
         +recibirExplosion(explosion: Explosion)
+        +recibirImpacto()
         +perderEnergia(porcentaje: double)
         +perderVida()
         +agregarPuntos(cantidad: int)
         +agregarVida()
         +estaVivo() boolean
+        +getEnergia() double
+        +getVidas() int
+        +getPuntos() int
     }
 
     class Juego {
         -VIDAS_INICIALES: int
+        -POS_X_INICIAL: double
+        -ALTITUD_INICIAL: double
         -FPS: int
         -PUNTOS_NIVEL: int
-        -RADIO_IMPACTO_MISIL: double
+        -random: Random
         -nivel: Nivel
         -avion: Avion
-        -escuadrones: List~Escuadron~
+        -escuadron: Escuadron
         -misilsActivos: List~Misil~
         -explosionesRecientes: List~Explosion~
         -enCurso: boolean
         -tickDisparo: int
         +Juego()
+        +Juego(random: Random)
         +iniciar()
+        +reiniciarPartida()
         +actualizar()
         -actualizarDrones(esTurnoDisparo: boolean)
         -actualizarMisiles()
-        -misilImpactaAvion(misil: Misil, altitudAnterior: double) boolean
         -verificarNivelSuperado()
         +moverAvion(direccion: Direccion, delta: double)
         +cambiarAltitudAvion(delta: double)
+        +getNivel() Nivel
+        +getAvion() Avion
+        +getEscuadron() Escuadron
+        +getMisilsActivos() List~Misil~
+        +getExplosionesRecientes() List~Explosion~
+        +isEnCurso() boolean
     }
 
     class Nivel {
@@ -94,6 +107,7 @@ classDiagram
         -nivel: Nivel
         -random: Random
         +Escuadron(nivel: Nivel)
+        +Escuadron(nivel: Nivel, random: Random)
         +activarSiguiente()
         +notificarCompletado(dron: Dron)
         -calcularTamanioTanda() int
@@ -113,7 +127,9 @@ classDiagram
         +Dron(direccion: Direccion, velocidad: double, altitud: double)
         +mover()
         +disparar(velocidadCaida: double) Misil
+        +disparar(velocidadCaida: double, random: Random) Misil
         +completoRecorrido() boolean
+        +getDireccion() Direccion
         +isActivo() boolean
         +setActivo(activo: boolean)
     }
@@ -121,11 +137,15 @@ classDiagram
     class Misil {
         -ALT_DET_MIN: double
         -ALT_DET_MAX: double
+        -RADIO_IMPACTO: double
         -altitudDetonacion: double
         -velocidadCaida: double
         -explotado: boolean
         +Misil(posX: double, altitudInicial: double, velocidadCaida: double)
+        +Misil(posX: double, altitudInicial: double, velocidadCaida: double, random: Random)
+        +Misil(posX: double, altitudInicial: double, velocidadCaida: double, altitudDetonacion: double)
         +mover()
+        +impacta(avion: Avion, altitudAnterior: double) boolean
         +debeExplotar() boolean
         +explotar() Explosion
         +getAltitudDetonacion() double
@@ -162,6 +182,55 @@ classDiagram
     Dron --> Direccion
     Dron ..> Misil : crea al disparar
     Misil ..> Explosion : crea al explotar
+    Misil ..> Avion : determina si impacta
     Explosion ..> Avion : calcula danio
     Avion --> Direccion : recibe movimiento
+```
+
+# Diagrama de capas (MVC)
+
+La vista **no conoce las clases del modelo**: el controlador le entrega `Posicion`
+(x, altitud) para drones, misiles y explosiones, y recibe comandos de movimiento.
+El controlador se crea en `Main` y se inyecta en la vista.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Main
+    class VentanaPrincipal {
+        <<vista>>
+    }
+    class PantallaJuego {
+        <<vista>>
+    }
+    class Controlador {
+        <<controlador>>
+        +iniciarJuego()
+        +reiniciarJuego()
+        +actualizarJuego()
+        +moverAvionIzquierda(delta: double)
+        +moverAvionDerecha(delta: double)
+        +cambiarAltitudAvion(delta: double)
+        +getPosicionesDrones() List~Posicion~
+        +getPosicionesMisiles() List~Posicion~
+        +getPosicionesExplosiones() List~Posicion~
+    }
+    class Posicion {
+        <<record>>
+        +x: double
+        +altitud: double
+    }
+    class Juego {
+        <<modelo>>
+    }
+
+    Main ..> Controlador : crea
+    Main ..> VentanaPrincipal : crea
+    VentanaPrincipal --> Controlador
+    VentanaPrincipal ..> PantallaJuego : crea
+    PantallaJuego --> Controlador
+    PantallaJuego ..> Posicion : dibuja
+    Controlador --> Juego
+    Controlador ..> Posicion : crea
 ```

@@ -14,19 +14,28 @@ public class Misil extends EntidadVoladora {
     private final double velocidadCaida;
     private boolean explotado;
 
+    /** Random compartido por defecto: evita crear un Random nuevo por cada misil */
+    private static final Random RANDOM_POR_DEFECTO = new Random();
+
     /** Constructor normal: altitud de detonación aleatoria entre 1200-4500m */
     public Misil(double posX, double altitudInicial, double velocidadCaida) {
+        this(posX, altitudInicial, velocidadCaida, RANDOM_POR_DEFECTO);
+    }
+
+    /**
+     * Altitud de detonación aleatoria entre 1200-4500m tomada del Random recibido,
+     * igual que Escuadron: permite inyectar un Random controlado en los tests.
+     */
+    public Misil(double posX, double altitudInicial, double velocidadCaida, Random random) {
         this(
                 posX,
                 altitudInicial,
                 velocidadCaida,
-                ALT_DET_MIN
-                        + new Random().nextDouble()
-                        * (ALT_DET_MAX - ALT_DET_MIN)
+                ALT_DET_MIN + random.nextDouble() * (ALT_DET_MAX - ALT_DET_MIN)
         );
     }
 
-    /** Constructor para tests: altitud de detonación fija */
+    /** Constructor con altitud de detonación fija (tests) */
     public Misil(
             double posX,
             double altitudInicial,

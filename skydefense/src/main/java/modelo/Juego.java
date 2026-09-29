@@ -2,6 +2,7 @@ package modelo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Logica central de Sky Defense.
@@ -17,40 +18,62 @@ import java.util.List;
  */
 public class Juego {
 
-    private static final int VIDAS_INICIALES = 3;
-    private static final int FPS = 60;
-    private static final int PUNTOS_NIVEL = 300;
+    private static final int    VIDAS_INICIALES   = 3;
+    private static final double POS_X_INICIAL     = 500.0;
+    private static final double ALTITUD_INICIAL   = 3000.0;
+    private static final int    FPS               = 60;
+    private static final int    PUNTOS_NIVEL      = 300;
 
-    private final Nivel nivel;
-    private final Avion avion;
-    private final List<Escuadron> escuadrones;
+    private final Random random;
     private final List<Misil> misilsActivos;
     private final List<Explosion> explosionesRecientes;
+
+    private Nivel nivel;
+    private Avion avion;
+    private Escuadron escuadron;
 
     private boolean enCurso;
     private int tickDisparo;
 
     public Juego() {
+        this(new Random());
+    }
+
+    /** Constructor con Random inyectado (igual que Escuadron): permite tests deterministas. */
+    public Juego(Random random) {
+        this.random = random;
         this.nivel = new Nivel();
-        this.avion = new Avion(500, 3000, VIDAS_INICIALES);
-        this.escuadrones = new ArrayList<>();
+        this.avion = new Avion(POS_X_INICIAL, ALTITUD_INICIAL, VIDAS_INICIALES);
+        this.escuadron = new Escuadron(nivel, random);
         this.misilsActivos = new ArrayList<>();
         this.explosionesRecientes = new ArrayList<>();
         this.enCurso = false;
         this.tickDisparo = 0;
     }
 
+    /**
+     * Arranca (o reanuda con un nuevo escuadron) el nivel actual.
+     * Conserva el avion, los puntos y el nivel. Tambien se usa al pasar de nivel.
+     */
     public void iniciar() {
-        escuadrones.clear();
         misilsActivos.clear();
         explosionesRecientes.clear();
         tickDisparo = 0;
 
-        Escuadron escuadron = new Escuadron(nivel);
+        escuadron = new Escuadron(nivel, random);
         escuadron.activarSiguiente();
 
-        escuadrones.add(escuadron);
         enCurso = true;
+    }
+
+    /**
+     * Reinicia la partida completa: nivel 1, avion nuevo (vidas, energia y
+     * puntos iniciales) y un escuadron nuevo.
+     */
+    public void reiniciarPartida() {
+        nivel = new Nivel();
+        avion = new Avion(POS_X_INICIAL, ALTITUD_INICIAL, VIDAS_INICIALES);
+        iniciar();
     }
 
     public void actualizar() {
@@ -86,24 +109,20 @@ public class Juego {
 
     private void actualizarDrones(boolean esTurnoDisparo) {
 
-        for (Escuadron escuadron : escuadrones) {
+        for (Dron dron : new ArrayList<>(escuadron.getDronesActivos())) {
 
-            for (Dron dron :
-                    new ArrayList<>(escuadron.getDronesActivos())) {
+            dron.mover();
 
-                dron.mover();
+            if (esTurnoDisparo
+                    && random.nextDouble() < nivel.getProbDisparo()) {
 
-                if (esTurnoDisparo
-                        && Math.random() < nivel.getProbDisparo()) {
+                misilsActivos.add(
+                        dron.disparar(nivel.getVelMisiles(), random)
+                );
+            }
 
-                    misilsActivos.add(
-                            dron.disparar(nivel.getVelMisiles())
-                    );
-                }
-
-                if (dron.completoRecorrido()) {
-                    escuadron.notificarCompletado(dron);
-                }
+            if (dron.completoRecorrido()) {
+                escuadron.notificarCompletado(dron);
             }
         }
     }
@@ -122,15 +141,15 @@ public class Juego {
 
             /*
              * GRASP - Information Expert:
-             * Juego ya no calcula cómo se produce el impacto.
-             * Le pregunta al propio misil.
+             * Juego no calcula como se produce el impacto ni sus consecuencias.
+             * Le pregunta al misil si impacto y le avisa al avion.
              */
             if (misil.impacta(avion, altitudAnterior)) {
 
                 Explosion explosion =
                         misil.explotar();
 
-                avion.perderVida();
+                avion.recibirImpacto();
 
                 explosionesRecientes.add(explosion);
                 misilesAEliminar.add(misil);
@@ -160,11 +179,7 @@ public class Juego {
             return;
         }
 
-        boolean escuadronesCompletos =
-                escuadrones.stream()
-                        .allMatch(Escuadron::estaCompleto);
-
-        if (!escuadronesCompletos
+        if (!escuadron.estaCompleto()
                 || !misilsActivos.isEmpty()) {
 
             return;
@@ -189,10 +204,6 @@ public class Juego {
         avion.cambiarAltitud(delta);
     }
 
-    public void restablecerPuntos() {
-        avion.restablecerPuntos();
-    }
-
     public Nivel getNivel() {
         return nivel;
     }
@@ -201,8 +212,8 @@ public class Juego {
         return avion;
     }
 
-    public List<Escuadron> getEscuadrones() {
-        return List.copyOf(escuadrones);
+    public Escuadron getEscuadron() {
+        return escuadron;
     }
 
     public List<Misil> getMisilsActivos() {

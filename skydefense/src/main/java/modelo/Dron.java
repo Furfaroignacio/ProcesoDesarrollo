@@ -1,5 +1,7 @@
 package modelo;
 
+import java.util.Random;
+
 public class Dron extends EntidadVoladora {
 
     private static final double POS_X_MIN    = 0.0;
@@ -33,9 +35,17 @@ public class Dron extends EntidadVoladora {
         }
     }
 
-    /** Dispara un misil desde la posición actual */
+    /**
+     * Dispara un misil desde la posición actual.
+     * GRASP - Creator: el dron es quien crea el misil que lanza.
+     */
     public Misil disparar(double velocidadCaida) {
         return new Misil(posX, altitud, velocidadCaida);
+    }
+
+    /** Igual que {@link #disparar(double)}, pero con el Random inyectado (tests deterministas). */
+    public Misil disparar(double velocidadCaida, Random random) {
+        return new Misil(posX, altitud, velocidadCaida, random);
     }
 
     public boolean   completoRecorrido() { return completoRecorrido; }

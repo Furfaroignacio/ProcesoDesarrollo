@@ -1,9 +1,7 @@
 package vista;
 
 import controlador.Controlador;
-import modelo.Direccion;
-import modelo.Dron;
-import modelo.Misil;
+import controlador.Posicion;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,9 +29,9 @@ public class PantallaJuego extends JPanel implements ActionListener {
     private final List<ExplosionAnim> animaciones = new ArrayList<>();
 
     // ── Constructor ───────────────────────────────────────────────────────
-    public PantallaJuego(VentanaPrincipal ventana) {
+    public PantallaJuego(VentanaPrincipal ventana, Controlador ctrl) {
         this.ventana = ventana;
-        this.ctrl    = new Controlador();
+        this.ctrl    = ctrl;
         setBackground(SkinManager.getActual().fondoJuego);
         setFocusable(true);
         timer = new Timer(16, this);
@@ -41,7 +39,7 @@ public class PantallaJuego extends JPanel implements ActionListener {
     }
 
     public void iniciar() {
-        ctrl.iniciarJuego();
+        ctrl.reiniciarJuego();
         timer.start();
         requestFocusInWindow();
     }
@@ -55,7 +53,6 @@ public class PantallaJuego extends JPanel implements ActionListener {
                 "Confirmar reinicio", JOptionPane.YES_NO_OPTION);
         if (op == JOptionPane.YES_OPTION) {
             ctrl.reiniciarJuego();
-            ctrl.restablecerPuntos();
             timer.start();
             requestFocusInWindow();
         } else {
@@ -66,15 +63,15 @@ public class PantallaJuego extends JPanel implements ActionListener {
     // ── Game loop ─────────────────────────────────────────────────────────
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (izq)    ctrl.moverAvionHorizontal(Direccion.DERECHA_IZQUIERDA, 9);
-        if (der)    ctrl.moverAvionHorizontal(Direccion.IZQUIERDA_DERECHA, 9);
+        if (izq)    ctrl.moverAvionIzquierda(9);
+        if (der)    ctrl.moverAvionDerecha(9);
         if (arriba) ctrl.cambiarAltitudAvion(45);
         if (abajo)  ctrl.cambiarAltitudAvion(-45);
 
         ctrl.actualizarJuego();
 
-        for (modelo.Explosion exp : ctrl.getExplosionesRecientes())
-            animaciones.add(new ExplosionAnim(mundoXaPx(exp.getPosX()), altAPx(exp.getAltitud())));
+        for (Posicion exp : ctrl.getPosicionesExplosiones())
+            animaciones.add(new ExplosionAnim(mundoXaPx(exp.x()), altAPx(exp.altitud())));
 
         Iterator<ExplosionAnim> it = animaciones.iterator();
         while (it.hasNext()) {
@@ -265,9 +262,9 @@ public class PantallaJuego extends JPanel implements ActionListener {
     }
 
     private void pintarDrones(Graphics2D g2, Skin sk) {
-        for (Dron d : ctrl.getDronesActivos()) {
-            int px = mundoXaPx(d.getPosX());
-            int py = altAPx(d.getAltitud());
+        for (Posicion d : ctrl.getPosicionesDrones()) {
+            int px = mundoXaPx(d.x());
+            int py = altAPx(d.altitud());
 
             Color glowDron = new Color(sk.dron.getRed(), sk.dron.getGreen(), sk.dron.getBlue(), 40);
             g2.setColor(glowDron);
@@ -293,9 +290,9 @@ public class PantallaJuego extends JPanel implements ActionListener {
     }
 
     private void pintarMisiles(Graphics2D g2, Skin sk) {
-        for (Misil m : ctrl.getMisilsActivos()) {
-            int px = mundoXaPx(m.getPosX());
-            int py = altAPx(m.getAltitud());
+        for (Posicion m : ctrl.getPosicionesMisiles()) {
+            int px = mundoXaPx(m.x());
+            int py = altAPx(m.altitud());
 
             g2.setColor(sk.misil);
             g2.fillRoundRect(px - 3, py - 10, 6, 18, 3, 3);

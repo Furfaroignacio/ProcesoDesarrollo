@@ -42,6 +42,15 @@ public class Avion extends EntidadVoladora {
         explosion.calcularDanio(this);
     }
 
+    /**
+     * GRASP - Information Expert:
+     * el avion es quien conoce sus vidas, por lo que es el unico que decide
+     * como afecta un impacto directo de misil (hoy: pierde una vida).
+     */
+    public void recibirImpacto() {
+        perderVida();
+    }
+
     public void perderEnergia(double porcentaje) {
         energia -= ENERGIA_MAX * (porcentaje / 100.0);
         if (energia <= 0) {
@@ -49,10 +58,7 @@ public class Avion extends EntidadVoladora {
             energia = estaVivo() ? ENERGIA_MAX : 0;
         }
     }
-    // GRASP - Information Expert
-    public void restablecerPuntos() {
-        puntos = 0;
-    }
+
     public void perderVida() {
         if (vidas > 0) vidas--;
     }
