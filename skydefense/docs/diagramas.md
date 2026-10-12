@@ -10,6 +10,44 @@ El diagrama incluye solamente las clases del modelo. Los signos indican visibili
 classDiagram
     direction TB
 
+    class Posicionable {
+        <<interface>>
+        +getPosX() double
+        +getAltitud() double
+    }
+
+    class ObjetivoDanable {
+        <<interface>>
+        +agregarPuntos(cantidad: int)
+        +perderEnergia(porcentaje: double)
+        +perderVida()
+    }
+
+    class PoliticaDanio {
+        <<interface>>
+        +aplicar(objetivo: ObjetivoDanable, distancia: double)
+    }
+
+    class DanioPorDistancia {
+        -DISTANCIA_SEGURA: double
+        -DISTANCIA_MEDIA: double
+        -DISTANCIA_CRITICA: double
+        +aplicar(objetivo: ObjetivoDanable, distancia: double)
+    }
+
+    class GestorMisiles {
+        -ALTITUD_MINIMA_VUELO: double
+        -misilesActivos: List~Misil~
+        -explosionesRecientes: List~Explosion~
+        +agregar(misil: Misil)
+        +actualizar(avion: Avion)
+        +limpiar()
+        +limpiarExplosiones()
+        +hayMisilesActivos() boolean
+        +getMisilesActivos() List~Misil~
+        +getExplosionesRecientes() List~Explosion~
+    }
+
     class EntidadVoladora {
         <<abstract>>
         #posX: double
@@ -53,8 +91,7 @@ classDiagram
         -nivel: Nivel
         -avion: Avion
         -escuadron: Escuadron
-        -misilsActivos: List~Misil~
-        -explosionesRecientes: List~Explosion~
+        -gestorMisiles: GestorMisiles
         -enCurso: boolean
         -tickDisparo: int
         +Juego()
@@ -63,7 +100,6 @@ classDiagram
         +reiniciarPartida()
         +actualizar()
         -actualizarDrones(esTurnoDisparo: boolean)
-        -actualizarMisiles()
         -verificarNivelSuperado()
         +moverAvion(direccion: Direccion, delta: double)
         +cambiarAltitudAvion(delta: double)
@@ -154,9 +190,11 @@ classDiagram
     class Explosion {
         -posX: double
         -altitud: double
+        -politicaDanio: PoliticaDanio
         +Explosion(posX: double, altitud: double)
-        +calcularDanio(avion: Avion)
-        +calcularDistancia(avion: Avion) double
+        +Explosion(posX: double, altitud: double, politicaDanio: PoliticaDanio)
+        +calcularDanio(objetivo: ObjetivoDanable)
+        +calcularDistancia(objetivo: Posicionable) double
         +getPosX() double
         +getAltitud() double
     }
@@ -167,6 +205,16 @@ classDiagram
         DERECHA_IZQUIERDA
     }
 
+    Posicionable <|.. EntidadVoladora
+    Posicionable <|.. Explosion
+    Posicionable <|-- ObjetivoDanable
+    ObjetivoDanable <|.. Avion
+    PoliticaDanio <|.. DanioPorDistancia
+    Explosion --> PoliticaDanio : delega efecto
+    Explosion ..> ObjetivoDanable : dania
+    Juego "1" *-- "1" GestorMisiles
+    GestorMisiles "1" o-- "0..*" Misil : misiles activos
+    GestorMisiles "1" o-- "0..*" Explosion : explosiones recientes
     EntidadVoladora <|-- Avion
     EntidadVoladora <|-- Dron
     EntidadVoladora <|-- Misil
@@ -174,8 +222,6 @@ classDiagram
     Juego "1" *-- "1" Avion
     Juego "1" *-- "1" Nivel
     Juego "1" *-- "1" Escuadron
-    Juego "1" o-- "0..*" Misil : misiles activos
-    Juego "1" o-- "0..*" Explosion : explosiones recientes
 
     Escuadron "1" *-- "10" Dron
     Escuadron --> Nivel : obtiene velocidad
@@ -183,7 +229,6 @@ classDiagram
     Dron ..> Misil : crea al disparar
     Misil ..> Explosion : crea al explotar
     Misil ..> Avion : determina si impacta
-    Explosion ..> Avion : calcula danio
     Avion --> Direccion : recibe movimiento
 ```
 
@@ -191,7 +236,9 @@ classDiagram
 
 La vista **no conoce las clases del modelo**: el controlador le entrega `Posicion`
 (x, altitud) para drones, misiles y explosiones, y recibe comandos de movimiento.
-El controlador se crea en `Main` y se inyecta en la vista.
+El controlador se crea en `Main` y se inyecta en la vista **como la abstracción
+`ControladorJuego`** (SOLID - DIP), que a su vez combina dos interfaces por rol:
+`ComandosJuego` y `ConsultasJuego` (SOLID - ISP).
 
 ```mermaid
 classDiagram
@@ -203,6 +250,15 @@ classDiagram
     }
     class PantallaJuego {
         <<vista>>
+    }
+    class ComandosJuego {
+        <<interface>>
+    }
+    class ConsultasJuego {
+        <<interface>>
+    }
+    class ControladorJuego {
+        <<interface>>
     }
     class Controlador {
         <<controlador>>
@@ -227,9 +283,12 @@ classDiagram
 
     Main ..> Controlador : crea
     Main ..> VentanaPrincipal : crea
-    VentanaPrincipal --> Controlador
+    ComandosJuego <|-- ControladorJuego
+    ConsultasJuego <|-- ControladorJuego
+    ControladorJuego <|.. Controlador
+    VentanaPrincipal --> ControladorJuego
     VentanaPrincipal ..> PantallaJuego : crea
-    PantallaJuego --> Controlador
+    PantallaJuego --> ControladorJuego
     PantallaJuego ..> Posicion : dibuja
     Controlador --> Juego
     Controlador ..> Posicion : crea
