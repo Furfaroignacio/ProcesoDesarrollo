@@ -42,4 +42,20 @@ class SolidTest {
         assertTrue(gestor.getExplosionesRecientes().isEmpty());
         assertEquals(3, avion.getVidas());
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // O — PoliticaDanio (Open/Closed)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("OCP: se puede agregar una regla de danio nueva sin modificar Explosion")
+    void explosion_aceptaPoliticaNueva_sinModificarse() {
+        Avion avion = new Avion(0, 0, 3);
+        PoliticaDanio modoDificil = (objetivo, distancia) -> objetivo.perderVida();
+
+        new Explosion(0, 500, modoDificil).calcularDanio(avion);
+
+        assertEquals(2, avion.getVidas(), "La politica nueva se aplica aunque este lejos");
+        assertEquals(0, avion.getPuntos());
+    }
 }
