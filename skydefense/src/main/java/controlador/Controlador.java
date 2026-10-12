@@ -12,7 +12,7 @@ import java.util.List;
  * modelo: las entidades se exponen como {@link Posicion} y los movimientos
  * como comandos (izquierda / derecha / altitud).
  */
-public class Controlador implements ComandosJuego, ConsultasJuego {
+public class Controlador implements ControladorJuego {
 
     private final Juego juego;
 

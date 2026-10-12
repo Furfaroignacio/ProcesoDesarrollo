@@ -1,4 +1,7 @@
 import modelo.*;
+import controlador.Controlador;
+import controlador.ControladorJuego;
+import controlador.ConsultasJuego;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,5 +110,22 @@ class SolidTest {
         @Override public void agregarPuntos(int cantidad)     { puntos += cantidad; }
         @Override public void perderEnergia(double porcentaje){ energiaPerdida += porcentaje; }
         @Override public void perderVida()                    { vidasPerdidas++; }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // D — ControladorJuego (Dependency Inversion)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("DIP: los clientes pueden usar el controlador solo a traves de abstracciones")
+    void controlador_seUsaPorSuAbstraccion() {
+        ControladorJuego controlador = new Controlador();
+        controlador.iniciarJuego();
+
+        ConsultasJuego soloLectura = controlador;   // ISP: un cliente que solo consulta
+
+        assertTrue(soloLectura.juegoEnCurso());
+        assertEquals(3, soloLectura.getVidas());
+        assertEquals(1, soloLectura.getNumeroNivel());
     }
 }

@@ -1,6 +1,6 @@
 package vista;
 
-import controlador.Controlador;
+import controlador.ControladorJuego;
 import controlador.Posicion;
 
 import javax.swing.*;
@@ -22,14 +22,14 @@ public class PantallaJuego extends JPanel implements ActionListener {
     private static final int SUELO_H = 18;
 
     // ── Estado ────────────────────────────────────────────────────────────
-    private final Controlador      ctrl;
+    private final ControladorJuego ctrl;   // SOLID - DIP
     private final VentanaPrincipal ventana;
     private final Timer            timer;
     private boolean izq, der, arriba, abajo;
     private final List<ExplosionAnim> animaciones = new ArrayList<>();
 
     // ── Constructor ───────────────────────────────────────────────────────
-    public PantallaJuego(VentanaPrincipal ventana, Controlador ctrl) {
+    public PantallaJuego(VentanaPrincipal ventana, ControladorJuego ctrl) {
         this.ventana = ventana;
         this.ctrl    = ctrl;
         setBackground(SkinManager.getActual().fondoJuego);

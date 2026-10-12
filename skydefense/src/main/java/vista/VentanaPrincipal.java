@@ -1,6 +1,6 @@
 package vista;
 
-import controlador.Controlador;
+import controlador.ControladorJuego;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,13 +10,14 @@ public class VentanaPrincipal extends JFrame {
     public static final int ANCHO  = 900;
     public static final int ALTO   = 650;
 
-    private final Controlador controlador;
+    /** SOLID - DIP: depende de la abstraccion, no de la clase concreta. */
+    private final ControladorJuego controlador;
     private final CardLayout  cardLayout;
     private final JPanel      contenedor;
 
     private PantallaMenu   pantallaMenu;
     private PantallaJuego  pantallaJuego;
-    public VentanaPrincipal(Controlador controlador) {
+    public VentanaPrincipal(ControladorJuego controlador) {
         super("Sky Defense");
         this.controlador = controlador;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
