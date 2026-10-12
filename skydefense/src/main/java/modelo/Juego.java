@@ -25,8 +25,9 @@ public class Juego {
     private static final int    PUNTOS_NIVEL      = 300;
 
     private final Random random;
-    private final List<Misil> misilsActivos;
-    private final List<Explosion> explosionesRecientes;
+
+    /** SOLID - SRP: la gestion de misiles se delega a una clase propia. */
+    private final GestorMisiles gestorMisiles;
 
     private Nivel nivel;
     private Avion avion;
@@ -45,8 +46,7 @@ public class Juego {
         this.nivel = new Nivel();
         this.avion = new Avion(POS_X_INICIAL, ALTITUD_INICIAL, VIDAS_INICIALES);
         this.escuadron = new Escuadron(nivel, random);
-        this.misilsActivos = new ArrayList<>();
-        this.explosionesRecientes = new ArrayList<>();
+        this.gestorMisiles = new GestorMisiles();
         this.enCurso = false;
         this.tickDisparo = 0;
     }
@@ -56,8 +56,7 @@ public class Juego {
      * Conserva el avion, los puntos y el nivel. Tambien se usa al pasar de nivel.
      */
     public void iniciar() {
-        misilsActivos.clear();
-        explosionesRecientes.clear();
+        gestorMisiles.limpiar();
         tickDisparo = 0;
 
         escuadron = new Escuadron(nivel, random);
@@ -86,7 +85,7 @@ public class Juego {
             return;
         }
 
-        explosionesRecientes.clear();
+        gestorMisiles.limpiarExplosiones();
         tickDisparo++;
 
         int intervalo =
@@ -100,7 +99,7 @@ public class Juego {
         }
 
         actualizarDrones(esTurnoDisparo);
-        actualizarMisiles();
+        gestorMisiles.actualizar(avion);
 
         if (avion.estaVivo()) {
             verificarNivelSuperado();
@@ -116,7 +115,7 @@ public class Juego {
             if (esTurnoDisparo
                     && random.nextDouble() < nivel.getProbDisparo()) {
 
-                misilsActivos.add(
+                gestorMisiles.agregar(
                         dron.disparar(nivel.getVelMisiles(), random)
                 );
             }
@@ -127,52 +126,6 @@ public class Juego {
         }
     }
 
-    private void actualizarMisiles() {
-
-        List<Misil> misilesAEliminar =
-                new ArrayList<>();
-
-        for (Misil misil : misilsActivos) {
-
-            double altitudAnterior =
-                    misil.getAltitud();
-
-            misil.mover();
-
-            /*
-             * GRASP - Information Expert:
-             * Juego no calcula como se produce el impacto ni sus consecuencias.
-             * Le pregunta al misil si impacto y le avisa al avion.
-             */
-            if (misil.impacta(avion, altitudAnterior)) {
-
-                Explosion explosion =
-                        misil.explotar();
-
-                avion.recibirImpacto();
-
-                explosionesRecientes.add(explosion);
-                misilesAEliminar.add(misil);
-
-            } else if (misil.debeExplotar()) {
-
-                Explosion explosion =
-                        misil.explotar();
-
-                avion.recibirExplosion(explosion);
-
-                explosionesRecientes.add(explosion);
-                misilesAEliminar.add(misil);
-
-            } else if (misil.getAltitud() < 900) {
-
-                misilesAEliminar.add(misil);
-            }
-        }
-
-        misilsActivos.removeAll(misilesAEliminar);
-    }
-
     private void verificarNivelSuperado() {
 
         if (!enCurso) {
@@ -180,7 +133,7 @@ public class Juego {
         }
 
         if (!escuadron.estaCompleto()
-                || !misilsActivos.isEmpty()) {
+                || gestorMisiles.hayMisilesActivos()) {
 
             return;
         }
@@ -217,11 +170,11 @@ public class Juego {
     }
 
     public List<Misil> getMisilsActivos() {
-        return List.copyOf(misilsActivos);
+        return gestorMisiles.getMisilesActivos();
     }
 
     public List<Explosion> getExplosionesRecientes() {
-        return List.copyOf(explosionesRecientes);
+        return gestorMisiles.getExplosionesRecientes();
     }
 
     public boolean isEnCurso() {
