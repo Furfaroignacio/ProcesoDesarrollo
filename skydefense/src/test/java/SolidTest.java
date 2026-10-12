@@ -58,4 +58,25 @@ class SolidTest {
         assertEquals(2, avion.getVidas(), "La politica nueva se aplica aunque este lejos");
         assertEquals(0, avion.getPuntos());
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // L — Posicionable (Liskov Substitution)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("LSP: Avion, Dron, Misil y Explosion son sustituibles como Posicionable")
+    void posicionables_sonSustituibles() {
+        Posicionable[] entidades = {
+                new Avion(100, 2000, 3),
+                new Dron(Direccion.DERECHA_IZQUIERDA, 5, 4200),
+                new Misil(300, 3500, 40, 1500),
+                new Explosion(400, 2500)
+        };
+        double[][] esperado = { {100, 2000}, {1000, 4200}, {300, 3500}, {400, 2500} };
+
+        for (int i = 0; i < entidades.length; i++) {
+            assertEquals(esperado[i][0], entidades[i].getPosX(), 0.001);
+            assertEquals(esperado[i][1], entidades[i].getAltitud(), 0.001);
+        }
+    }
 }

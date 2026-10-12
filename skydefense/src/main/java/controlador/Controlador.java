@@ -1,10 +1,8 @@
 package controlador;
 
 import modelo.Direccion;
-import modelo.Dron;
-import modelo.Explosion;
 import modelo.Juego;
-import modelo.Misil;
+import modelo.Posicionable;
 
 import java.util.List;
 
@@ -93,7 +91,12 @@ public class Controlador {
 
     // ── Conversión modelo → vista ─────────────────────────────────────────
 
-    private Posicion aPosicion(Dron d)      { return new Posicion(d.getPosX(), d.getAltitud()); }
-    private Posicion aPosicion(Misil m)     { return new Posicion(m.getPosX(), m.getAltitud()); }
-    private Posicion aPosicion(Explosion e) { return new Posicion(e.getPosX(), e.getAltitud()); }
+    /**
+     * SOLID - LSP: una unica conversion para cualquier Posicionable.
+     * Dron, Misil y Explosion se sustituyen entre si sin casos especiales
+     * (antes habia tres metodos sobrecargados casi identicos).
+     */
+    private Posicion aPosicion(Posicionable p) {
+        return new Posicion(p.getPosX(), p.getAltitud());
+    }
 }

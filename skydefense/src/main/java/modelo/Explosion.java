@@ -1,6 +1,6 @@
 package modelo;
 
-public class Explosion {
+public class Explosion implements Posicionable {
 
     /** Politica por defecto: las reglas originales del juego (no tiene estado). */
     private static final PoliticaDanio POLITICA_POR_DEFECTO = new DanioPorDistancia();
@@ -37,10 +37,12 @@ public class Explosion {
         );
     }
 
+    @Override
     public double getPosX() {
         return posX;
     }
 
+    @Override
     public double getAltitud() {
         return altitud;
     }
