@@ -12,7 +12,7 @@ import java.util.List;
  * modelo: las entidades se exponen como {@link Posicion} y los movimientos
  * como comandos (izquierda / derecha / altitud).
  */
-public class Controlador {
+public class Controlador implements ComandosJuego, ConsultasJuego {
 
     private final Juego juego;
 
@@ -26,42 +26,56 @@ public class Controlador {
 
     // ── Ciclo ─────────────────────────────────────────────────────────────
 
+    @Override
     public void iniciarJuego()    { juego.iniciar(); }
+    @Override
     public void actualizarJuego() { juego.actualizar(); }
 
     /** Reinicia la partida completa: nivel 1, vidas, energía y puntos iniciales. */
+    @Override
     public void reiniciarJuego()  { juego.reiniciarPartida(); }
 
     // ── Comandos del avión ────────────────────────────────────────────────
 
+    @Override
     public void moverAvionIzquierda(double delta) {
         juego.moverAvion(Direccion.DERECHA_IZQUIERDA, delta);
     }
 
+    @Override
     public void moverAvionDerecha(double delta) {
         juego.moverAvion(Direccion.IZQUIERDA_DERECHA, delta);
     }
 
+    @Override
     public void cambiarAltitudAvion(double delta) {
         juego.cambiarAltitudAvion(delta);
     }
 
     // ── Estado del avión ──────────────────────────────────────────────────
 
+    @Override
     public int     getPuntos()    { return juego.getAvion().getPuntos(); }
+    @Override
     public int     getVidas()     { return juego.getAvion().getVidas(); }
+    @Override
     public double  getEnergia()   { return juego.getAvion().getEnergia(); }
+    @Override
     public double  getPosXAvion() { return juego.getAvion().getPosX(); }
+    @Override
     public double  getAltAvion()  { return juego.getAvion().getAltitud(); }
+    @Override
     public boolean avionVivo()    { return juego.getAvion().estaVivo(); }
 
     // ── Estado del nivel ──────────────────────────────────────────────────
 
+    @Override
     public int    getNumeroNivel()  { return juego.getNivel().getNumero(); }
 
     // ── Entidades para la vista ───────────────────────────────────────────
 
     /** Posiciones de los misiles actualmente en vuelo */
+    @Override
     public List<Posicion> getPosicionesMisiles() {
         return juego.getMisilsActivos().stream()
                 .map(this::aPosicion)
@@ -72,6 +86,7 @@ public class Controlador {
      * Posiciones de las explosiones generadas en el último tick del modelo.
      * La vista las consume para crear sus animaciones visuales.
      */
+    @Override
     public List<Posicion> getPosicionesExplosiones() {
         return juego.getExplosionesRecientes().stream()
                 .map(this::aPosicion)
@@ -79,6 +94,7 @@ public class Controlador {
     }
 
     /** Posiciones de los drones activos (para renderizado) */
+    @Override
     public List<Posicion> getPosicionesDrones() {
         return juego.getEscuadron().getDronesActivos().stream()
                 .map(this::aPosicion)
@@ -87,6 +103,7 @@ public class Controlador {
 
     // ── Estado general ────────────────────────────────────────────────────
 
+    @Override
     public boolean juegoEnCurso() { return juego.isEnCurso(); }
 
     // ── Conversión modelo → vista ─────────────────────────────────────────

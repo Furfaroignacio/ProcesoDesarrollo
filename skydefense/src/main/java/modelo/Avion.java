@@ -1,6 +1,6 @@
 package modelo;
 
-public class Avion extends EntidadVoladora {
+public class Avion extends EntidadVoladora implements ObjetivoDanable {
 
     private static final double POS_X_MIN   = 0.0;
     private static final double POS_X_MAX   = 1000.0;
@@ -51,6 +51,7 @@ public class Avion extends EntidadVoladora {
         perderVida();
     }
 
+    @Override
     public void perderEnergia(double porcentaje) {
         energia -= ENERGIA_MAX * (porcentaje / 100.0);
         if (energia <= 0) {
@@ -59,10 +60,12 @@ public class Avion extends EntidadVoladora {
         }
     }
 
+    @Override
     public void perderVida() {
         if (vidas > 0) vidas--;
     }
 
+    @Override
     public void agregarPuntos(int cantidad) {
         puntos += cantidad;
     }

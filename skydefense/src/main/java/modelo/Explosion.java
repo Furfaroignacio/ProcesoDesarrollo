@@ -20,16 +20,18 @@ public class Explosion implements Posicionable {
     }
 
     /**
+     * SOLID - ISP: recibe un ObjetivoDanable, no un Avion completo.
      * SOLID - OCP: Explosion solo calcula la distancia y delega en la
      * politica el efecto. Nuevas reglas = nueva PoliticaDanio, sin editar esta clase.
      */
-    public void calcularDanio(Avion avion) {
-        politicaDanio.aplicar(avion, calcularDistancia(avion));
+    public void calcularDanio(ObjetivoDanable objetivo) {
+        politicaDanio.aplicar(objetivo, calcularDistancia(objetivo));
     }
 
-    public double calcularDistancia(Avion avion) {
-        double distanciaHorizontal = posX - avion.getPosX();
-        double distanciaVertical = altitud - avion.getAltitud();
+    /** SOLID - ISP: para medir distancia alcanza con cualquier Posicionable. */
+    public double calcularDistancia(Posicionable objetivo) {
+        double distanciaHorizontal = posX - objetivo.getPosX();
+        double distanciaVertical = altitud - objetivo.getAltitud();
 
         return Math.sqrt(
                 distanciaHorizontal * distanciaHorizontal

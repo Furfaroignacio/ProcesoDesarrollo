@@ -14,16 +14,16 @@ public class DanioPorDistancia implements PoliticaDanio {
     private static final double DISTANCIA_CRITICA = 20.0;
 
     @Override
-    public void aplicar(Avion avion, double distancia) {
+    public void aplicar(ObjetivoDanable objetivo, double distancia) {
         if (distancia > DISTANCIA_SEGURA) {
-            avion.agregarPuntos(40);
+            objetivo.agregarPuntos(40);
         } else if (distancia >= DISTANCIA_MEDIA) {
-            avion.agregarPuntos(20);
-            avion.perderEnergia(20);
+            objetivo.agregarPuntos(20);
+            objetivo.perderEnergia(20);
         } else if (distancia >= DISTANCIA_CRITICA) {
-            avion.perderEnergia(40);
+            objetivo.perderEnergia(40);
         } else {
-            avion.perderVida();
+            objetivo.perderVida();
         }
     }
 }

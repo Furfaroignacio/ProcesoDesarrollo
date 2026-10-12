@@ -79,4 +79,33 @@ class SolidTest {
             assertEquals(esperado[i][1], entidades[i].getAltitud(), 0.001);
         }
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // I — ObjetivoDanable (Interface Segregation)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("ISP: Explosion funciona con cualquier ObjetivoDanable, no solo con Avion")
+    void explosion_daniaCualquierObjetivoDanable() {
+        ObjetivoFalso objetivo = new ObjetivoFalso(0, 0);
+
+        new Explosion(0, 10).calcularDanio(objetivo);  // < 20 m
+
+        assertEquals(1, objetivo.vidasPerdidas);
+    }
+
+    /** Objetivo minimo: solo implementa lo que la interfaz exige. */
+    private static class ObjetivoFalso implements ObjetivoDanable {
+        private final double x, alt;
+        int puntos, vidasPerdidas;
+        double energiaPerdida;
+
+        ObjetivoFalso(double x, double alt) { this.x = x; this.alt = alt; }
+
+        @Override public double getPosX()                     { return x; }
+        @Override public double getAltitud()                  { return alt; }
+        @Override public void agregarPuntos(int cantidad)     { puntos += cantidad; }
+        @Override public void perderEnergia(double porcentaje){ energiaPerdida += porcentaje; }
+        @Override public void perderVida()                    { vidasPerdidas++; }
+    }
 }

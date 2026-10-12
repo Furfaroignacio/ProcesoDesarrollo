@@ -8,5 +8,5 @@ package modelo;
  */
 public interface PoliticaDanio {
 
-    void aplicar(Avion avion, double distancia);
+    void aplicar(ObjetivoDanable objetivo, double distancia);
 }
