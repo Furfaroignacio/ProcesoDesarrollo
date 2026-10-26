@@ -206,7 +206,8 @@ class SkyDefenseTest {
 
         esc.activarSiguiente();
 
-        while (!esc.estaCompleto()) {
+        int tandas = 0;   // tope de seguridad: si algo se rompe, falla en vez de colgarse
+        while (!esc.estaCompleto() && tandas++ < 20) {
             int activos = esc.getActivos();
             int minimoEsperado = Math.min(2, 10 - totalActivados);
             assertTrue(activos >= minimoEsperado && activos <= 4,
@@ -322,21 +323,23 @@ class SkyDefenseTest {
     @Test
     @DisplayName("Jugador obtiene exactamente una vida al superar un nivel")
     void juego_vidaExtra_alSuperarNivel() {
-        Juego juego = new Juego();
+        // Random que nunca dispara (0.99 > probabilidad maxima 0.95):
+        // los drones cruzan, el escuadron termina y se supera el nivel.
+        Juego juego = new Juego(new SinDisparosRandom());
         juego.iniciar();
         int vidasAntes = juego.getAvion().getVidas();
-        Escuadron escuadron = juego.getEscuadron();
 
-        while (!escuadron.estaCompleto()) {
-            for (Dron dron : new ArrayList<>(escuadron.getDronesActivos())) {
-                escuadron.notificarCompletado(dron);
-            }
+        for (int tick = 0; tick < 5000 && juego.getNivel().getNumero() == 1; tick++) {
+            juego.actualizar();
         }
 
-        juego.actualizar();
-
-        assertEquals(vidasAntes + 1, juego.getAvion().getVidas());
         assertEquals(2, juego.getNivel().getNumero());
+        assertEquals(vidasAntes + 1, juego.getAvion().getVidas());
+        assertEquals(300, juego.getAvion().getPuntos());
+    }
+
+    private static class SinDisparosRandom extends Random {
+        @Override public double nextDouble() { return 0.99; }
     }
 
     @Test
@@ -400,16 +403,16 @@ class SkyDefenseTest {
     }
 
     @Test
-    @DisplayName("Juego tiene un unico escuadron y se renueva al iniciar")
+    @DisplayName("Juego tiene un unico grupo de enemigos y se renueva al iniciar")
     void juego_escuadronUnico_seRenuevaAlIniciar() {
         Juego juego = new Juego();
         juego.iniciar();
-        Escuadron primero = juego.getEscuadron();
+        ComponenteEnemigo primero = juego.getEnemigos();
         assertNotNull(primero);
 
         juego.iniciar();
 
-        assertNotSame(primero, juego.getEscuadron());
+        assertNotSame(primero, juego.getEnemigos());
     }
 
     // ──────────────────────────────────────────────────────────────────────────

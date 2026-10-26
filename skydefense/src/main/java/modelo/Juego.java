@@ -1,6 +1,5 @@
 package modelo;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -31,7 +30,12 @@ public class Juego {
 
     private Nivel nivel;
     private Avion avion;
-    private Escuadron escuadron;
+
+    /**
+     * PATRON COMPOSITE: Juego solo conoce el Componente. No sabe si los
+     * enemigos son un dron, un escuadron o un escuadron de escuadrones.
+     */
+    private ComponenteEnemigo enemigos;
 
     private boolean enCurso;
     private int tickDisparo;
@@ -45,29 +49,35 @@ public class Juego {
         this.random = random;
         this.nivel = new Nivel();
         this.avion = new Avion(POS_X_INICIAL, ALTITUD_INICIAL, VIDAS_INICIALES);
-        this.escuadron = new Escuadron(nivel, random);
+        this.enemigos = crearEnemigos();
         this.gestorMisiles = new GestorMisiles();
         this.enCurso = false;
         this.tickDisparo = 0;
     }
 
     /**
-     * Arranca (o reanuda con un nuevo escuadron) el nivel actual.
-     * Conserva el avion, los puntos y el nivel. Tambien se usa al pasar de nivel.
+     * Arranca (o reanuda con enemigos nuevos) el nivel actual.
+     * Conserva el avion, los puntos, el nivel y la politica de danio.
+     * Tambien se usa al pasar de nivel.
      */
     public void iniciar() {
         gestorMisiles.limpiar();
         tickDisparo = 0;
 
-        escuadron = new Escuadron(nivel, random);
-        escuadron.activarSiguiente();
+        enemigos = crearEnemigos();
+        enemigos.activar();
 
         enCurso = true;
     }
 
+    /** Enemigos de cada nivel: el escuadron estandar de 10 drones. */
+    private ComponenteEnemigo crearEnemigos() {
+        return new Escuadron(nivel, random);
+    }
+
     /**
      * Reinicia la partida completa: nivel 1, avion nuevo (vidas, energia y
-     * puntos iniciales) y un escuadron nuevo.
+     * puntos iniciales) y enemigos nuevos. Mantiene la dificultad elegida.
      */
     public void reiniciarPartida() {
         nivel = new Nivel();
@@ -98,7 +108,7 @@ public class Juego {
             tickDisparo = 0;
         }
 
-        actualizarDrones(esTurnoDisparo);
+        actualizarEnemigos(esTurnoDisparo);
         gestorMisiles.actualizar(avion);
 
         if (avion.estaVivo()) {
@@ -106,23 +116,10 @@ public class Juego {
         }
     }
 
-    private void actualizarDrones(boolean esTurnoDisparo) {
-
-        for (Dron dron : new ArrayList<>(escuadron.getDronesActivos())) {
-
-            dron.mover();
-
-            if (esTurnoDisparo
-                    && random.nextDouble() < nivel.getProbDisparo()) {
-
-                gestorMisiles.agregar(
-                        dron.disparar(nivel.getVelMisiles(), random)
-                );
-            }
-
-            if (dron.completoRecorrido()) {
-                escuadron.notificarCompletado(dron);
-            }
+    /** PATRON COMPOSITE: una sola llamada, sin importar cuantos enemigos haya. */
+    private void actualizarEnemigos(boolean esTurnoDisparo) {
+        for (Misil misil : enemigos.actualizar(esTurnoDisparo, nivel, random)) {
+            gestorMisiles.agregar(misil);
         }
     }
 
@@ -132,7 +129,7 @@ public class Juego {
             return;
         }
 
-        if (!escuadron.estaCompleto()
+        if (!enemigos.estaTerminado()
                 || gestorMisiles.hayMisilesActivos()) {
 
             return;
@@ -157,6 +154,18 @@ public class Juego {
         avion.cambiarAltitud(delta);
     }
 
+    /**
+     * PATRON STRATEGY: cambia en tiempo de ejecucion como danian las
+     * explosiones. La politica puede venir decorada (PATRON DECORATOR).
+     */
+    public void setPoliticaDanio(PoliticaDanio politicaDanio) {
+        gestorMisiles.setPoliticaDanio(politicaDanio);
+    }
+
+    public PoliticaDanio getPoliticaDanio() {
+        return gestorMisiles.getPoliticaDanio();
+    }
+
     public Nivel getNivel() {
         return nivel;
     }
@@ -165,8 +174,8 @@ public class Juego {
         return avion;
     }
 
-    public Escuadron getEscuadron() {
-        return escuadron;
+    public ComponenteEnemigo getEnemigos() {
+        return enemigos;
     }
 
     public List<Misil> getMisilsActivos() {

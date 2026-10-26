@@ -2,6 +2,7 @@ package modelo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * SOLID - Single Responsibility Principle (SRP):
@@ -18,6 +19,9 @@ public class GestorMisiles {
 
     private final List<Misil> misilesActivos = new ArrayList<>();
     private final List<Explosion> explosionesRecientes = new ArrayList<>();
+
+    /** PATRON STRATEGY: politica de danio activa (por defecto, dificultad normal). */
+    private PoliticaDanio politicaDanio = new DanioPorDistancia();
 
     public void agregar(Misil misil) {
         misilesActivos.add(misil);
@@ -37,12 +41,12 @@ public class GestorMisiles {
 
             // GRASP - Information Expert: el misil decide si impacto.
             if (misil.impacta(avion, altitudAnterior)) {
-                explosionesRecientes.add(misil.explotar());
+                explosionesRecientes.add(misil.explotar(politicaDanio));
                 avion.recibirImpacto();
                 misilesAEliminar.add(misil);
 
             } else if (misil.debeExplotar()) {
-                Explosion explosion = misil.explotar();
+                Explosion explosion = misil.explotar(politicaDanio);
                 avion.recibirExplosion(explosion);
                 explosionesRecientes.add(explosion);
                 misilesAEliminar.add(misil);
@@ -53,6 +57,15 @@ public class GestorMisiles {
         }
 
         misilesActivos.removeAll(misilesAEliminar);
+    }
+
+    /** Cambia la estrategia de danio en tiempo de ejecucion. */
+    public void setPoliticaDanio(PoliticaDanio politicaDanio) {
+        this.politicaDanio = Objects.requireNonNull(politicaDanio);
+    }
+
+    public PoliticaDanio getPoliticaDanio() {
+        return politicaDanio;
     }
 
     public void limpiar() {

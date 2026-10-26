@@ -1,6 +1,7 @@
 package modelo;
 
 /**
+ * PATRON STRATEGY - Estrategia concreta: dificultad NORMAL.
  * Reglas originales del juego (sin cambios de comportamiento):
  * - mas de 150 m : +40 puntos
  * - 80 a 150 m   : +20 puntos y -20% energia
@@ -25,5 +26,10 @@ public class DanioPorDistancia implements PoliticaDanio {
         } else {
             objetivo.perderVida();
         }
+    }
+
+    @Override
+    public String getNombre() {
+        return "Normal";
     }
 }

@@ -29,4 +29,7 @@ public interface ConsultasJuego {
     List<Posicion> getPosicionesMisiles();
 
     List<Posicion> getPosicionesExplosiones();
+
+    /** Descripcion de la politica de danio activa, ej. "Dificil + Escudo". */
+    String getModoDanio();
 }

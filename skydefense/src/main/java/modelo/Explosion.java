@@ -1,5 +1,10 @@
 package modelo;
 
+/**
+ * PATRON STRATEGY - Contexto: calcula la distancia al objetivo y delega en la
+ * {@link PoliticaDanio} (estrategia) que efecto produce. No sabe que dificultad
+ * esta en juego ni si la politica esta decorada.
+ */
 public class Explosion implements Posicionable {
 
     /** Politica por defecto: las reglas originales del juego (no tiene estado). */

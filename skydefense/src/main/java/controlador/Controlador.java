@@ -1,7 +1,10 @@
 package controlador;
 
+import modelo.BonusRiesgo;
 import modelo.Direccion;
+import modelo.EscudoProtector;
 import modelo.Juego;
+import modelo.PoliticaDanio;
 import modelo.Posicionable;
 
 import java.util.List;
@@ -11,6 +14,15 @@ import java.util.List;
  * La vista solo accede al modelo a través de aquí y nunca recibe clases del
  * modelo: las entidades se exponen como {@link Posicion} y los movimientos
  * como comandos (izquierda / derecha / altitud).
+ *
+ * PATRON FACADE:
+ *  - Cliente:      la vista (VentanaPrincipal, PantallaMenu, PantallaJuego).
+ *  - Facade:       esta clase, que expone operaciones simples (ControladorJuego).
+ *  - Subsistemas:  Juego, Avion, Nivel, ComponenteEnemigo/Escuadron/Dron,
+ *                  GestorMisiles, Misil, Explosion y las politicas de danio.
+ * La vista nunca coordina esas clases: por ejemplo, configurarDanio() arma la
+ * estrategia y sus decoradores, y getPosicionesDrones() recorre el arbol de
+ * enemigos y convierte cada dron en una Posicion.
  */
 public class Controlador implements ControladorJuego {
 
@@ -50,6 +62,25 @@ public class Controlador implements ControladorJuego {
     @Override
     public void cambiarAltitudAvion(double delta) {
         juego.cambiarAltitudAvion(delta);
+    }
+
+    // ── Configuración de daño (Strategy + Decorator) ──────────────────────
+
+    @Override
+    public void configurarDanio(Dificultad dificultad, boolean escudo, boolean bonusRiesgo) {
+        PoliticaDanio politica = dificultad.crearEstrategia();   // STRATEGY
+        if (escudo) {
+            politica = new EscudoProtector(politica);            // DECORATOR
+        }
+        if (bonusRiesgo) {
+            politica = new BonusRiesgo(politica);                // DECORATOR
+        }
+        juego.setPoliticaDanio(politica);
+    }
+
+    @Override
+    public String getModoDanio() {
+        return juego.getPoliticaDanio().getNombre();
     }
 
     // ── Estado del avión ──────────────────────────────────────────────────
@@ -96,7 +127,7 @@ public class Controlador implements ControladorJuego {
     /** Posiciones de los drones activos (para renderizado) */
     @Override
     public List<Posicion> getPosicionesDrones() {
-        return juego.getEscuadron().getDronesActivos().stream()
+        return juego.getEnemigos().getDronesActivos().stream()
                 .map(this::aPosicion)
                 .toList();
     }

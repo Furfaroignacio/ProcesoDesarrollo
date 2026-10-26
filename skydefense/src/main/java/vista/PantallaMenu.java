@@ -1,14 +1,26 @@
 package vista;
 
+import controlador.ComandosJuego;
+import controlador.Dificultad;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.function.BooleanSupplier;
 
 public class PantallaMenu extends JPanel {
 
     private final VentanaPrincipal ventana;
+    /** SOLID - ISP: el menu solo necesita enviar comandos, no consultar estado. */
+    private final ComandosJuego    comandos;
 
-    public PantallaMenu(VentanaPrincipal ventana) {
-        this.ventana = ventana;
+    // Configuracion elegida por el jugador (se aplica al tocar JUGAR)
+    private Dificultad dificultad  = Dificultad.NORMAL;
+    private boolean    escudo      = false;
+    private boolean    bonusRiesgo = false;
+
+    public PantallaMenu(VentanaPrincipal ventana, ComandosJuego comandos) {
+        this.ventana  = ventana;
+        this.comandos = comandos;
         setBackground(SkinManager.getActual().fondoMenu);
         setLayout(new GridBagLayout());
         construirUI();
@@ -22,6 +34,8 @@ public class PantallaMenu extends JPanel {
         agregarSubtitulo(gbc, skin);
         agregarAlumnos(gbc, skin);
         agregarSelectorSkins(gbc);
+        agregarSelectorDificultad(gbc, skin);
+        agregarSelectorModificadores(gbc, skin);
         agregarBotonJugar(gbc, skin);
         agregarBotonSalir(gbc);
         agregarInstrucciones(gbc, skin);
@@ -72,8 +86,11 @@ public class PantallaMenu extends JPanel {
 
     private void agregarBotonJugar(GridBagConstraints gbc, Skin skin) {
         JButton btnJugar = crearBoton("▶  JUGAR", skin.btn, skin.btnHov);
-        btnJugar.addActionListener(e -> ventana.mostrarJuego());
-        gbc.gridy = 4;
+        btnJugar.addActionListener(e -> {
+            comandos.configurarDanio(dificultad, escudo, bonusRiesgo);
+            ventana.mostrarJuego();
+        });
+        gbc.gridy = 6;
         gbc.insets = new Insets(12, 0, 12, 0);
         add(btnJugar, gbc);
     }
@@ -85,7 +102,7 @@ public class PantallaMenu extends JPanel {
                 new Color(160, 60, 60)
         );
         btnSalir.addActionListener(e -> System.exit(0));
-        gbc.gridy = 5;
+        gbc.gridy = 7;
         add(btnSalir, gbc);
     }
 
@@ -96,9 +113,85 @@ public class PantallaMenu extends JPanel {
         );
         instrucciones.setFont(new Font("Monospaced", Font.PLAIN, 12));
         instrucciones.setForeground(skin.subtit);
-        gbc.gridy = 6;
-        gbc.insets = new Insets(28, 0, 0, 0);
+        gbc.gridy = 8;
+        gbc.insets = new Insets(20, 0, 0, 0);
         add(instrucciones, gbc);
+    }
+
+    // ── Dificultad (Strategy) y modificadores (Decorator) ────────────────
+
+    private void agregarSelectorDificultad(GridBagConstraints gbc, Skin skin) {
+        JPanel panel = crearPanelOpciones("DIFICULTAD:", skin);
+        for (Dificultad d : Dificultad.values()) {
+            panel.add(crearBotonOpcion(d.getNombre().toUpperCase(), skin,
+                    () -> dificultad == d,
+                    () -> dificultad = d));
+        }
+        gbc.gridy = 4;
+        gbc.insets = new Insets(4, 0, 4, 0);
+        add(panel, gbc);
+    }
+
+    private void agregarSelectorModificadores(GridBagConstraints gbc, Skin skin) {
+        JPanel panel = crearPanelOpciones("EXTRAS:", skin);
+        panel.add(crearBotonOpcion("ESCUDO", skin,
+                () -> escudo,
+                () -> escudo = !escudo));
+        panel.add(crearBotonOpcion("BONUS", skin,
+                () -> bonusRiesgo,
+                () -> bonusRiesgo = !bonusRiesgo));
+        gbc.gridy = 5;
+        gbc.insets = new Insets(4, 0, 4, 0);
+        add(panel, gbc);
+    }
+
+    private JPanel crearPanelOpciones(String titulo, Skin skin) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        panel.setOpaque(false);
+        JLabel label = new JLabel(titulo);
+        label.setFont(new Font("Monospaced", Font.BOLD, 13));
+        label.setForeground(skin.subtit);
+        panel.add(label);
+        return panel;
+    }
+
+    /** Boton de opcion: se marca con borde blanco cuando esta seleccionado. */
+    private JButton crearBotonOpcion(String texto, Skin skin,
+                                     BooleanSupplier seleccionado, Runnable alElegir) {
+        JButton btn = new JButton(texto) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                if (seleccionado.getAsBoolean()) {
+                    g2.setColor(Color.WHITE);
+                    g2.setStroke(new BasicStroke(2f));
+                    g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 12, 12);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("Monospaced", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(skin.btn);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
+        btn.setPreferredSize(new Dimension(96, 32));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { btn.setBackground(skin.btnHov); }
+            public void mouseExited (java.awt.event.MouseEvent e) { btn.setBackground(skin.btn); }
+        });
+        btn.addActionListener(e -> {
+            alElegir.run();
+            repaint();   // actualiza los bordes de seleccion de todos los botones
+        });
+        return btn;
     }
 
     private JPanel crearSkinSelector() {

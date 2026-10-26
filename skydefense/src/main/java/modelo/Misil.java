@@ -92,6 +92,16 @@ public class Misil extends EntidadVoladora {
         return new Explosion(posX, altitud);
     }
 
+    /**
+     * Igual que {@link #explotar()}, pero la explosion usa la politica de danio
+     * (estrategia, posiblemente decorada) que eligio el jugador.
+     * GRASP - Creator: el misil sigue siendo quien crea su explosion.
+     */
+    public Explosion explotar(PoliticaDanio politicaDanio) {
+        explotado = true;
+        return new Explosion(posX, altitud, politicaDanio);
+    }
+
     public double getAltitudDetonacion() {
         return altitudDetonacion;
     }

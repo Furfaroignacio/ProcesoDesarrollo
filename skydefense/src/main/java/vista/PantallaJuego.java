@@ -181,6 +181,10 @@ public class PantallaJuego extends JPanel implements ActionListener {
         g2.drawRoundRect(bx, by, bw, bh, 6, 6);
 
         g2.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        g2.setColor(new Color(200, 200, 140));
+        g2.drawString("MODO: " + ctrl.getModoDanio(), 270, 46);
+
+        g2.setFont(new Font("Monospaced", Font.PLAIN, 11));
         g2.setColor(new Color(170, 215, 255));
         g2.drawString(String.format("ALT: %.0fm", ctrl.getAltAvion()), W - 130, 46);
 

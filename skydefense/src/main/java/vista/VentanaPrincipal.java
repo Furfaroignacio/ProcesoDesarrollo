@@ -28,7 +28,7 @@ public class VentanaPrincipal extends JFrame {
         cardLayout  = new CardLayout();
         contenedor  = new JPanel(cardLayout);
 
-        pantallaMenu  = new PantallaMenu(this);
+        pantallaMenu  = new PantallaMenu(this, controlador);
         pantallaJuego = new PantallaJuego(this, controlador);
 
         contenedor.add(pantallaMenu,  "MENU");
